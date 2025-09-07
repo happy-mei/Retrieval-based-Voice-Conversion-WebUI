@@ -4,6 +4,17 @@ if [ "$(uname)" = "Darwin" ]; then
   # macOS specific env:
   export PYTORCH_ENABLE_MPS_FALLBACK=1
   export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
+  # Ensure aria2c exists on macOS
+  if ! command -v aria2c >/dev/null 2>&1; then
+    echo "aria2 not found. Installing via Homebrew..."
+    if command -v brew >/dev/null 2>&1; then
+      brew install aria2
+    else
+      echo "Homebrew not found. Please install aria2 manually: https://formulae.brew.sh/formula/aria2"
+      exit 1
+    fi
+  fi
+
 elif [ "$(uname)" != "Linux" ]; then
   echo "Unsupported operating system."
   exit 1
@@ -16,32 +27,32 @@ else
   echo "Create venv..."
   requirements_file="requirements.txt"
 
-  # Check if Python 3.8 is installed
-  if ! command -v python3.8 >/dev/null 2>&1 || pyenv versions --bare | grep -q "3.8"; then
-    echo "Python 3 not found. Attempting to install 3.8..."
+  # Check if Python 3.10 is installed
+  if ! command -v python3.10 >/dev/null 2>&1 || pyenv versions --bare | grep -q "3.10"; then
+    echo "Python 3 not found. Attempting to install 3.10..."
     if [ "$(uname)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
-      brew install python@3.8
+      brew install python@3.10
     elif [ "$(uname)" = "Linux" ] && command -v apt-get >/dev/null 2>&1; then
       sudo apt-get update
-      sudo apt-get install python3.8
+      sudo apt-get install python3.10
     else
-      echo "Please install Python 3.8 manually."
+      echo "Please install Python 3.10 manually."
       exit 1
     fi
   fi
 
-  python3.8 -m venv .venv
+  python3.10 -m venv .venv
   . .venv/bin/activate
 
   # Check if required packages are installed and install them if not
   if [ -f "${requirements_file}" ]; then
-    installed_packages=$(python3.8 -m pip freeze)
+    installed_packages=$(python3.10 -m pip freeze)
     while IFS= read -r package; do
       expr "${package}" : "^#.*" > /dev/null && continue
       package_name=$(echo "${package}" | sed 's/[<>=!].*//')
       if ! echo "${installed_packages}" | grep -q "${package_name}"; then
         echo "${package_name} not found. Attempting to install..."
-        python3.8 -m pip install --upgrade "${package}"
+        python3.10 -m pip install --upgrade "${package}"
       fi
     done < "${requirements_file}"
   else
@@ -59,4 +70,4 @@ if [ $? -ne 0 ]; then
 fi
 
 # Run the main script
-python3.8 infer-web.py --pycmd python3.8
+python3.10 infer-web.py --pycmd python3.10
